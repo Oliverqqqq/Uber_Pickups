@@ -1,0 +1,248 @@
+---
+title: "Analysis of UBer Pickups In NYC"
+author: "Zhangchi Qiu"
+date: "20/05/2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+#Task 1
+
+
+```{r}
+#import data and merge into one
+
+apr<-read.csv("uber-raw-data-apr14.csv",header = TRUE)
+may<-read.csv("uber-raw-data-may14.csv",header = TRUE)
+jun<-read.csv("uber-raw-data-jun14.csv",header = TRUE)
+jul<-read.csv("uber-raw-data-jul14.csv",header = TRUE)
+aug<-read.csv("uber-raw-data-aug14.csv",header = TRUE)
+sep<-read.csv("uber-raw-data-sep14.csv",header = TRUE)
+
+uber<-rbind(apr,may,jun,jul,aug,sep)
+```
+
+```{r}
+#package for this assignment
+library(ggplot2)
+library(lubridate)
+
+```
+
+##task 1.1
+For task 1.1, I will sort raw data by days of week to anlysis what day of the week are the largest number of uber pick-ups and the minimum. 
+```{r}
+#create day column to label the day of the week
+
+uber$Date.Time <- mdy_hms(uber$Date.Time)
+uber$days <- weekdays(as.Date(uber$Date.Time))
+```
+
+
+To analysis which day of the week has ts largest number of uber pick-up and the minimum, we need to calculate the number of pick-ups in each day.
+```{r}
+#count pick-ups each day of week
+uberday_pickup <- aggregate(uber$days, FUN = length, by = list (uber$days))
+
+#Giving name to the column
+colnames(uberday_pickup) <- c("day_of_week","number_of_pickups")
+
+#factor the day from Monday to Sunday
+uberday_pickup$day_of_week <- factor(uberday_pickup$day_of_week,levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))
+ordered = T
+```
+
+After calculate the number of pick-ups in each day, we can draw a graph to indicates which day of the week has largest number of uber pick-ups and the minimum
+```{r}
+#show result of which day of the week has largest uber pick-ups and the minimum
+uberday_pickup
+
+# make bar chart to show trend
+ggplot(uberday_pickup, aes(day_of_week,number_of_pickups, fill=day_of_week)) + geom_bar(stat = "identity", position="dodge") +theme(axis.text.x = element_text(angle=15 ,hjust=1))+labs(title = "Uber Pick-Ups at Each day of the week")
+
+```
+
+As can be seen From the chart, the largest numebr of uber pickup is Thursday(755145) and the smallest the number of uber pickups is Sunday(490180).Also, the number of pickups is increasing from Monday to Thursday and is decreasing from Thursday to Sunday.
+
+
+##Task 1.2
+
+For task 1.2 I will sort raw data by Monthly to anlysis number of uber pick-ups each month.
+```{r}
+#sort data by month and create Month coloumn
+uber$Month <- months.POSIXt(as.Date(uber$Date.Time))
+```
+
+To analysis Uber in NYC trend over the months, the number of pick-ups each need to be calculated.
+```{r}
+#calcuating the number of uber pick-ups on each month
+ubermonth_pickup <-aggregate(uber$Month, FUN = length, by = list(uber$Month))
+
+#giving names to the column
+colnames(ubermonth_pickup) <- c("Month","number_of_pickups")
+
+#facotr month from April to September
+ubermonth_pickup$Month <- factor(ubermonth_pickup$Month,levels = c("April","May","June","July","August","September"))
+                          
+
+```
+
+After calcuating the number of pickup each month, we can draw a graph to indicate the Uber in NYC trend over the months
+
+```{r}
+#show result
+ubermonth_pickup
+
+# make bar chart to show trends
+ggplot(ubermonth_pickup, aes(Month,number_of_pickups, fill=Month)) + geom_bar(stat = "identity", position="dodge") +theme(axis.text.x = element_text(angle=15 ,hjust=1))+labs(title = "Uber Pick-Ups Monthly Result")
+```
+
+As can be seen from chart, the number of uber pickup is increasing from April(564516) to September(1028136).
+
+##Task 1.3
+For Task 1.3, In order to measure what times of the day are the most popular in terms of pick-ups, i will sort data by 24 hours.
+```{r}
+#sort data by 24hours and create column time
+uber$Time <- hour(uber$Date.Time)
+```
+
+To analysis what time of the day are the most popular in terms of pick up, the number of pick-up hourly need to be calculated.
+```{r}
+#calcuating the number of uber pick-ups hourly.
+uberHour_pickup <- aggregate(uber$Time, FUN = length, by = list(uber$Time))
+
+#giving name to the column
+colnames(uberHour_pickup) <-c(x="time", y = "number_of_pickups")
+
+uberHour_pickup$time = factor(uberHour_pickup$time)
+```
+
+
+After calcuating the number of pickup hourly, we can draw a graph to indicate the Uber in NYC trend in the day.
+```{r}
+#show result
+uberHour_pickup
+
+#make bar chart to show trends
+ggplot(uberHour_pickup, aes(time,number_of_pickups)) + geom_bar(stat = "identity") +theme(axis.text.x = element_text(angle=50 ,hjust=1.5)) +labs(title = "Uber Pick-Ups Monthly Result")
+
+
+```
+
+
+As can be seen from chart, 17:00 (336190) has the highest number of pickup in the day and 2:00 in the midnight has smallest number of pickup in the day. these is a incresaing trends from 2:00 to 7:00 and then slight decrease from 7:00 to 10:00. After 10:0 in the morning, these is a increasing tends from 10:00 to 17:00. After that, a decresing trends strat from 17:00 to next day 2:00.
+
+# Task 2
+
+```{r}
+#package for task 2
+library(ggmap)
+```
+
+
+Befor plot the data, I will import the map from google.map
+```{r}
+
+NYC_Point<-get_map (location= "New York", zoom = 9, maptype = "roadmap") 
+
+```
+
+plot the pickup data as point into the map
+```{r}
+#point plot
+ggmap(NYC_Point) + geom_point(data = uber, aes(x = uber$Lon, y = uber$Lat, color = "Pick ups"),alpha = 0.05) + labs(x="Longitude", y="Latitude",title = "Uber Pickup Point Distribution Map") 
+```
+
+
+plot the prickup data as density plot into the map
+```{r}
+#get map
+NYC_Density <-get_map (location= "New York", zoom = 12, maptype = "roadmap")
+
+#density plot
+ggmap(NYC_Density) + stat_density2d(aes(x =uber$Lon, y =uber$Lat, fill = ..level..), size=5, bins= 40, geom = "polygon", data=uber ) +scale_fill_gradient(low = "yellow", high = "red") + labs(x="Longitude", y="Latitude", title = "Uber Pickup Density Distribution Map")
+```
+
+
+
+Both charts shows the loaction of uber pickup and especially for density plot, the red ares shows more number of uber pickup.
+
+##Task 2.1
+
+Plot Density
+```{r, fig.width=10,fig.height=10}
+#Via Density plot to show the numebr of pick up vary per day of the week and according to loaction
+
+ggmap(NYC_Density) + stat_density2d(aes(x=uber$Lon, y =uber$Lat,fill = ..level..), size=2, bins= 40, geom = "polygon", data=uber) + facet_wrap(~days) +scale_fill_gradient(low = "yellow", high = "red") + labs(x="Longitude", y="Latitude", title = "Uber Pickup Density Distribution Map By Day")
+
+```
+Figures Above shows number of pick up vary per day of the week and according to location.red color areas shows more number of pick up than the yellow color
+areas.
+
+Point Plot
+
+```{r,fig.width =10 , fig.height = 10}
+#Via Point Plot to show the number of pick up vary per day of the week and according to the loaction
+ggmap(NYC_Point) + geom_point(data = uber,aes(x = uber$Lon, y = uber$Lat, color = "pick ups"))+facet_wrap(~days)+ labs(x="Longitude", y="Latitude", title = "Uber Pickup Density Distribution Map By Day")
+
+
+```
+
+Figures above shows number of pick up per day of the week and according to location.
+
+
+##Task 2.2
+
+
+Plot Density
+```{r, fig.width=10, fig.height=10}
+
+#Via Density plot to show the number of pick up vary per month and according to location
+
+ggmap(NYC_Density) + stat_density2d(aes(x=uber$Lon, y =uber$Lat,fill = ..level..), size=2, bins= 40, geom = "polygon", data=uber) + facet_wrap(~Month) +scale_fill_gradient(low = "yellow", high = "red") + labs(x="Longitude", y="Latitude", title = "Uber Pickup Density Distribution Map By Month")
+
+
+```
+
+
+Figures above shows number of pick uo vary per month and according to loaction. red color areas shows more number of pick up than the yellow color areas.
+
+Point Plot
+```{r, fig.width=10, fig.height=10}
+
+#Via Point Plot to show the number of pick up vary per month of the week and according to the loaction
+ggmap(NYC_Point) + geom_point(data = uber,aes(x = uber$Lon, y = uber$Lat, color = "pick ups"))+facet_wrap(~Month)+ labs(x="Longitude", y="Latitude", title = "Uber Pickup Density Distribution Map By Month")
+
+
+```
+
+Figures above shows number of pick uo vary per month and according to loaction. 
+
+
+
+##Task 2.3
+
+Density Plot
+```{r, fig.width=10, fig.height=10}
+#via density plot to show the number of pick up vary per hour of the day and according to loaction.
+
+ggmap(NYC_Density) + stat_density2d(aes(x=uber$Lon, y =uber$Lat,fill = ..level..), size=2, bins= 40, geom = "polygon", data=uber) + facet_wrap(~Time) +scale_fill_gradient(low = "yellow", high = "red") + labs(x="Longitude", y="Latitude", title = "Uber Pickup Density Distribution Map By Month")
+
+```
+
+Figures Above shows number of pick up vary per hour of the day and according to location.red color areas shows more number of pick up than the yellow color areas.
+
+Point Plot
+
+```{r, fig.width=10, fig.height=10}
+
+#via Point plot to show the number of pick up vary per hour of the day and according to loaction
+
+ggmap(NYC_Point) + geom_point(data = uber,aes(x = uber$Lon, y = uber$Lat, color = "pick ups"))+facet_wrap(~Time)+ labs(x="Longitude", y="Latitude", title = "Uber Pickup Density Distribution Map By Month")
+
+```
+
+Figures above shows number of pick vary per hour of the day and according to loaction.
+
